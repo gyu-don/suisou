@@ -1,0 +1,9 @@
+[submodule "references/OpenShell"]
+	path = references/OpenShell
+	url = https://github.com/NVIDIA/OpenShell.git
+[submodule "references/OpenShell-Community"]
+	path = references/OpenShell-Community
+	url = https://github.com/NVIDIA/OpenShell-Community.git
+[submodule "references/openclaw"]
+	path = references/openclaw
+	url = https://github.com/openclaw/openclaw.git

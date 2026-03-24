@@ -1,0 +1,16 @@
+# syntax=docker/dockerfile:1.7
+
+FROM mitmproxy/mitmproxy:latest
+
+USER root
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/*
+USER mitmproxy
+
+COPY addon.py /opt/suisou/addon.py
+
+EXPOSE 8080
+
+ENTRYPOINT ["mitmdump", "--set", "confdir=/home/mitmproxy/.mitmproxy", \
+            "--set", "ssl_verify_upstream_trusted_ca=/etc/ssl/certs/ca-certificates.crt", \
+            "-s", "/opt/suisou/addon.py", \
+            "--listen-port", "8080"]
