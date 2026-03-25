@@ -1,6 +1,7 @@
 """mitmproxy addon: domain+method allowlist and credential injection."""
 
 import json
+import os
 from pathlib import Path
 
 from mitmproxy import ctx, http
@@ -56,7 +57,11 @@ class SuisouAddon:
             header = rule["header"]
             current = flow.request.headers.get(header, "")
             if current == rule["dummy"]:
-                flow.request.headers[header] = rule["real"]
+                real = os.environ.get(rule["env"], "")
+                if real:
+                    flow.request.headers[header] = real
+                else:
+                    ctx.log.warn(f"suisou: env var {rule['env']!r} not set for {host}")
 
 
 addons = [SuisouAddon()]

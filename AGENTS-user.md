@@ -12,12 +12,6 @@ For detailed OpenClaw documentation, see <https://openclaw.ai/> and `references/
 docker compose up
 ```
 
-To include the inference gateway:
-
-```sh
-docker compose --profile inference up
-```
-
 ## Configuration
 
 ### `router/allowlist.json`
@@ -34,21 +28,36 @@ Controls which domains and HTTP methods the agent can access:
 
 ### `router/credentials.json`
 
-Maps dummy API keys to real ones. Copy from `credentials.example.json` and fill in real values:
+Maps dummy API keys to real credentials via environment variables. Copy from `credentials.example.json`:
 
 ```sh
 cp router/credentials.example.json router/credentials.json
 ```
 
-### `inference/config.json`
+Each rule's `env` field names the environment variable the router reads at runtime. The file itself contains no secrets and can be committed as-is.
 
-Bifrost provider configuration. Copy from `config.example.json`:
+> **Note:** When adding a rule to `credentials.json`, the corresponding environment variable name must also be listed in the router service's `environment:` section in `compose.yml`. Otherwise the variable won't reach the container.
+
+Provide the variables to the router when starting:
 
 ```sh
-cp inference/config.example.json inference/config.json
+# inline
+ANTHROPIC_API_KEY=sk-ant-... docker compose up
+
+# .env file (keep out of git)
+echo 'ANTHROPIC_API_KEY=sk-ant-...' >> .env
+docker compose up
 ```
 
-See [Bifrost docs](https://docs.getbifrost.ai/overview) for provider setup.
+For secrets management, [Doppler](https://docs.doppler.com/docs/cli) and [1Password CLI](https://developer.1password.com/docs/cli/) are recommended:
+
+```sh
+# Doppler
+doppler run -- docker compose up
+
+# 1Password CLI (.env contains op:// references)
+op run --env-file=.env -- docker compose up
+```
 
 ## Services
 
@@ -66,9 +75,3 @@ Proxies and controls the agent's outbound internet access.
 
 - Allows or blocks requests per domain and HTTP method via an allowlist.
 - For configured domains, transparently replaces dummy API keys/tokens in outbound requests with real credentials.
-
-### inference (optional)
-
-An LLM inference gateway powered by [Bifrost](https://docs.getbifrost.ai/overview). Accessible from the agent at `http://inference:8080` (no proxy needed).
-
-If you only use cloud-hosted models, you can skip this service and route HTTPS traffic through the router directly.
