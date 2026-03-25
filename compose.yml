@@ -8,14 +8,21 @@ services:
         condition: service_started
     networks:
       - sandbox
+      - external
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "18789:18789"
     environment:
       HTTP_PROXY: http://router:8080
       HTTPS_PROXY: http://router:8080
       http_proxy: http://router:8080
       https_proxy: http://router:8080
+      NO_PROXY: host.docker.internal
+      no_proxy: host.docker.internal
     volumes:
       - mitmproxy-ca:/mitmproxy-ca:ro
-      - workspace:/home/sandbox/workspace
+      - openclaw-config:/home/node/.openclaw
 
   router:
     build:
@@ -25,15 +32,13 @@ services:
       - sandbox
       - external
     environment:
-      - ANTHROPIC_API_KEY
-      - OPENAI_API_KEY
     volumes:
       - mitmproxy-ca:/home/mitmproxy/.mitmproxy
       - ./router/allowlist.json:/etc/suisou/allowlist.json:ro
       - ./router/credentials.json:/etc/suisou/credentials.json:ro
 
 volumes:
-  workspace:
+  openclaw-config:
   mitmproxy-ca:
 
 networks:

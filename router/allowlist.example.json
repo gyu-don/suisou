@@ -1,0 +1,6 @@
+{
+  "rules": [
+    { "domain": "api.anthropic.com", "methods": ["POST"] },
+    { "domain": "api.openai.com", "methods": ["POST"] }
+  ]
+}

@@ -1,2 +1,4 @@
+.env
+compose.override.yml
+router/allowlist.json
 router/credentials.json
-inference/config.json

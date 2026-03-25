@@ -1,29 +1,18 @@
 # syntax=docker/dockerfile:1.7
 
-FROM debian:bookworm-slim
+FROM ghcr.io/openclaw/openclaw:latest
 
-ENV DEBIAN_FRONTEND=noninteractive
+USER root
 
 RUN --mount=type=cache,id=suisou-sandbox-apt-cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,id=suisou-sandbox-apt-lists,target=/var/lib/apt,sharing=locked \
     apt-get update \
-    && apt-get upgrade -y --no-install-recommends \
-    && apt-get install -y --no-install-recommends \
-      bash \
-      ca-certificates \
-      curl \
-      git \
-      gosu \
-      jq \
-      python3 \
-      ripgrep
-
-RUN useradd --create-home --shell /bin/bash sandbox
+    && apt-get install -y --no-install-recommends gosu
 
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
-WORKDIR /home/sandbox
+WORKDIR /app
 
 ENTRYPOINT ["entrypoint.sh"]
-CMD ["sleep", "infinity"]
+CMD ["node", "openclaw.mjs", "gateway", "--bind", "lan", "--port", "18789", "--allow-unconfigured"]

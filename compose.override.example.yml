@@ -1,0 +1,16 @@
+# compose.override.yml — personal overrides (auto-merged with compose.yml)
+# Copy this file to compose.override.yml and edit as needed.
+
+services:
+  openclaw:
+    environment:
+      # OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434/v1}
+      # OLLAMA_MODEL: ${OLLAMA_MODEL:-nemotron-cascade-2:30b}
+
+  router:
+    environment:
+      # Add env var passthrough for API keys used in credentials.json
+      # - OPENAI_API_KEY
+      # - ANTHROPIC_API_KEY
+      # - GOOGLE_API_KEY
+      # - GITHUB_TOKEN
