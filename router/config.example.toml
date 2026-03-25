@@ -1,0 +1,58 @@
+# suisou router configuration
+#
+# Copy to config.toml and edit:
+#   cp config.example.toml config.toml
+#
+# Each [services.<name>] block defines a group of endpoints the agent may
+# access, along with optional credential-injection rules.
+#
+# Credential injection uses a naming convention instead of explicit dummy
+# values.  Set the sandbox environment variable to the literal string
+# "SUISOU__<ENV_NAME>" (e.g. ANTHROPIC_API_KEY=SUISOU__ANTHROPIC_API_KEY).
+# When the router sees that marker in the configured header, it replaces it
+# with the real value from its own environment.
+
+[services.anthropic]
+endpoints = [
+  { domain = "api.anthropic.com", methods = ["POST"] },
+]
+
+[services.anthropic.credentials]
+header = "x-api-key"
+env    = "ANTHROPIC_API_KEY"
+
+[services.openai]
+endpoints = [
+  { domain = "api.openai.com", methods = ["POST"] },
+]
+
+[services.openai.credentials]
+header = "authorization"
+env    = "OPENAI_API_KEY"
+prefix = "Bearer "
+
+# --- GitHub ---
+# Git clone/fetch uses Smart HTTP:
+#   GET  /info/refs?service=git-upload-pack
+#   POST /git-upload-pack
+# Push uses POST /git-receive-pack.  The paths filter below restricts
+# POST to git-upload-pack only, so push is blocked.
+
+[services.github-git]
+endpoints = [
+  { domain = "github.com",             methods = ["GET"] },
+  { domain = "github.com",             methods = ["POST"], paths = ["/*/git-upload-pack"] },
+  { domain = "*.github.com",           methods = ["GET"] },
+  { domain = "*.githubusercontent.com", methods = ["GET"] },
+]
+
+# Uncomment to use the GitHub REST / GraphQL API (api.github.com).
+# [services.github-api]
+# endpoints = [
+#   { domain = "api.github.com", methods = ["GET", "POST", "PUT", "PATCH", "DELETE"] },
+# ]
+#
+# [services.github-api.credentials]
+# header = "authorization"
+# env    = "GITHUB_TOKEN"
+# prefix = "Bearer "

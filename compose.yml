@@ -3,39 +3,50 @@ services:
     build:
       context: sandbox
     init: true
+    restart: unless-stopped
     depends_on:
       router:
         condition: service_started
     networks:
       - sandbox
-      - external
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    ports:
-      - "18789:18789"
     environment:
       HTTP_PROXY: http://router:8080
       HTTPS_PROXY: http://router:8080
       http_proxy: http://router:8080
       https_proxy: http://router:8080
-      NO_PROXY: host.docker.internal
-      no_proxy: host.docker.internal
+      NO_PROXY: ""
+      no_proxy: ""
     volumes:
       - mitmproxy-ca:/mitmproxy-ca:ro
       - openclaw-config:/home/node/.openclaw
+
+  gateway-proxy:
+    image: alpine/socat:latest
+    init: true
+    depends_on:
+      openclaw:
+        condition: service_started
+    command: TCP-LISTEN:18789,fork,reuseaddr TCP:openclaw:18789
+    ports:
+      - "18789:18789"
+    networks:
+      - sandbox
+      - external
 
   router:
     build:
       context: router
     init: true
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks:
       - sandbox
       - external
-    environment:
     volumes:
       - mitmproxy-ca:/home/mitmproxy/.mitmproxy
-      - ./router/allowlist.json:/etc/suisou/allowlist.json:ro
-      - ./router/credentials.json:/etc/suisou/credentials.json:ro
+      - ./router/config.toml:/etc/suisou/config.toml:ro
 
 volumes:
   openclaw-config:

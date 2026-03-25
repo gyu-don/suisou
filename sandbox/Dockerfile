@@ -9,10 +9,7 @@ RUN --mount=type=cache,id=suisou-sandbox-apt-cache,target=/var/cache/apt,sharing
     apt-get update \
     && apt-get install -y --no-install-recommends gosu
 
-COPY entrypoint.sh /usr/local/bin/entrypoint.sh
-RUN chmod +x /usr/local/bin/entrypoint.sh
+COPY --chmod=755 entrypoint.sh /usr/local/bin/suisou-entrypoint.sh
 
-WORKDIR /app
-
-ENTRYPOINT ["entrypoint.sh"]
-CMD ["node", "openclaw.mjs", "gateway", "--bind", "lan", "--port", "18789", "--allow-unconfigured"]
+ENTRYPOINT ["suisou-entrypoint.sh"]
+CMD ["node", "openclaw.mjs", "gateway", "--allow-unconfigured", "--bind", "lan"]
