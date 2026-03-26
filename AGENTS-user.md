@@ -9,56 +9,66 @@ For detailed OpenClaw documentation, see <https://openclaw.ai/> and `references/
 ## Quick Start
 
 ```sh
-cp router/allowlist.example.json router/allowlist.json
-cp router/credentials.example.json router/credentials.json
+cp router/config.example.toml router/config.toml
+```
+
+Run onboard once to configure the gateway (see [official docs](https://docs.openclaw.ai/install/docker.md) for details):
+
+```sh
+docker compose build
+docker compose run --rm --no-deps --entrypoint node openclaw \
+  openclaw.mjs onboard --mode local --no-install-daemon
+```
+
+Then start the services:
+
+```sh
 docker compose up
 ```
 
-Edit the copied files to match your needs. The example files show the available format.
+Edit `router/config.toml` to match your needs. The example file shows the available format.
 
 ## Configuration
 
-### `router/allowlist.json`
+### `router/config.toml`
 
-Controls which domains and HTTP methods the agent can access. Copy from the example and edit:
-
-```sh
-cp router/allowlist.example.json router/allowlist.json
-```
-
-```json
-{
-  "rules": [
-    { "domain": "api.anthropic.com", "methods": ["POST"] }
-  ]
-}
-```
-
-### `router/credentials.json`
-
-Maps dummy API keys to real credentials via environment variables. Copy from the example and edit:
+Controls which domains the agent can access and how credentials are injected. Copy from the example and edit:
 
 ```sh
-cp router/credentials.example.json router/credentials.json
+cp router/config.example.toml router/config.toml
 ```
 
-Each rule's `env` field names the environment variable the router reads at runtime.
+See `router/config.example.toml` for the full format.
+
+### Credential injection
+
+The router uses a naming convention to replace dummy credentials with real ones. In the sandbox, set environment variables to the literal marker `SUISOU__<ENV_NAME>`:
+
+```yaml
+# compose.override.yml
+services:
+  openclaw:
+    environment:
+      - ANTHROPIC_API_KEY=SUISOU__ANTHROPIC_API_KEY
+```
+
+When the router sees `SUISOU__ANTHROPIC_API_KEY` in the configured HTTP header, it replaces it with the real value from its own environment.
 
 ### `compose.override.yml`
 
-Optional. Use this to add environment variable passthrough for extra API keys, or any other per-user Docker Compose overrides. Docker Compose automatically merges this with `compose.yml`.
+Optional. Use this to pass environment variables to containers, or any other per-user Docker Compose overrides. Docker Compose automatically merges this with `compose.yml`.
 
 ```sh
 cp compose.override.example.yml compose.override.yml
 ```
 
-When adding a rule to `credentials.json`, the corresponding environment variable must be passed to the router container. Add it to `compose.override.yml`:
+The router container needs the real API keys passed through:
 
 ```yaml
 services:
   router:
     environment:
-      - GOOGLE_API_KEY
+      - ANTHROPIC_API_KEY
 ```
 
 ### Secrets
@@ -79,6 +89,39 @@ ANTHROPIC_API_KEY=sk-ant-... docker compose up
 op run --env-file=.env -- docker compose up
 ```
 
+## Remote Access
+
+The gateway listens on port `18789`. To connect from another machine, forward the port over SSH:
+
+```sh
+ssh -L 18789:localhost:18789 <user>@<host>
+```
+
+Then open `http://localhost:18789/` in a browser.
+
+### Gateway token
+
+After starting the services, retrieve the gateway token:
+
+```sh
+docker compose exec openclaw sh -c \
+  "cat /home/node/.openclaw/openclaw.json" | jq -r '.gateway.auth.token'
+```
+
+Paste the token into the **Gateway Token** field on the Control UI login screen.
+
+### Device pairing
+
+When connecting from a new browser, OpenClaw requires device pairing approval. Approve from the host:
+
+```sh
+# Show pending requests
+docker compose exec openclaw cat /home/node/.openclaw/devices/pending.json
+
+# Approve via the CLI (requires gateway.remote.token config)
+docker compose exec openclaw openclaw devices approve <request-id>
+```
+
 ## Services
 
 ### openclaw
@@ -93,5 +136,5 @@ docker compose exec openclaw bash
 
 Proxies and controls the agent's outbound internet access.
 
-- Allows or blocks requests per domain and HTTP method via an allowlist.
-- For configured domains, transparently replaces dummy API keys/tokens in outbound requests with real credentials.
+- Allows or blocks requests per domain and HTTP method via a service-based allowlist.
+- For configured services, transparently replaces `SUISOU__*` credential markers in outbound requests with real values.

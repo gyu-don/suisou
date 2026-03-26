@@ -16,7 +16,7 @@ This project uses [jj](https://martinvonz.github.io/jj/) for version control.
 ## Project Layout
 
 ```
-compose.yml          # Service definitions (openclaw, router, inference)
+compose.yml          # Service definitions (openclaw, router)
 references/          # Related projects (read-only context, not upstream)
   openclaw/          # OpenClaw source — primary reference for usage and integration
   OpenShell/

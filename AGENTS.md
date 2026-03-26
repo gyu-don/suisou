@@ -9,8 +9,7 @@ Unlike similar projects (e.g., OpenShell in `references/`), suisou favors simpli
 The environment is defined in `compose.yml` with the following services:
 
 - **openclaw** — the OpenClaw AI agent container.
-- **router** — a proxy (likely mitmproxy) that mediates the agent's internet access. It enforces a domain + HTTP-method allowlist and rewrites dummy API keys/tokens to real credentials for designated domains.
-- **inference** *(optional)* — a [Bifrost](https://docs.getbifrost.ai/overview)-based LLM gateway. Useful when serving local models; for cloud-only setups, direct HTTPS through the router suffices.
+- **router** — a mitmproxy-based proxy that mediates the agent's internet access. It enforces a service-based domain + HTTP-method allowlist (`router/config.toml`) and replaces `SUISOU__*` credential markers in outbound requests with real values from its own environment.
 
 ## Documentation
 
