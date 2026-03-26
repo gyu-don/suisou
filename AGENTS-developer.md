@@ -13,10 +13,32 @@ Use English for all code, configuration files, and documentation.
 
 This project uses [jj](https://martinvonz.github.io/jj/) for version control.
 
+- **Record granularity**: one change per logical unit (a feature, a fix, or a config change). Don't bundle unrelated changes.
+- **Commit messages**: imperative mood, one-line summary. Add a body only when the "why" isn't obvious from the diff. Examples:
+  - `Add ollama endpoint to router allowlist`
+  - `Fix credential injection for WebSocket payloads`
+  - `Separate project and local settings`
+
+## Verification
+
+Always run at minimum:
+
+```sh
+docker compose config -q   # validate compose.yml syntax
+```
+
+When `compose.yml`, `Dockerfile`, or entrypoint scripts change, also:
+
+```sh
+docker compose build && docker compose up -d
+docker compose ps
+docker compose logs router --tail=20
+```
+
 ## Project Layout
 
 ```
-compose.yml          # Service definitions (openclaw, router)
+compose.yml          # Service definitions (openclaw, router, gateway-proxy)
 references/          # Related projects (read-only context, not upstream)
   openclaw/          # OpenClaw source — primary reference for usage and integration
   OpenShell/

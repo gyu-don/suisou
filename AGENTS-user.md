@@ -5,6 +5,7 @@ For detailed OpenClaw documentation, see <https://openclaw.ai/> and `references/
 ## Prerequisites
 
 - Docker and Docker Compose
+- `jq` (for extracting the gateway token)
 
 ## Quick Start
 
@@ -42,33 +43,29 @@ See `router/config.example.toml` for the full format.
 
 ### Credential injection
 
-The router uses a naming convention to replace dummy credentials with real ones. In the sandbox, set environment variables to the literal marker `SUISOU__<ENV_NAME>`:
+The router uses a naming convention to replace dummy credentials with real ones. This requires settings in two places — `compose.override.yml` configures both together:
 
 ```yaml
 # compose.override.yml
 services:
   openclaw:
     environment:
+      # Sandbox sees only the marker, never the real key
       - ANTHROPIC_API_KEY=SUISOU__ANTHROPIC_API_KEY
+  router:
+    environment:
+      # Router receives the real key from the host environment
+      - ANTHROPIC_API_KEY
 ```
 
-When the router sees `SUISOU__ANTHROPIC_API_KEY` in the configured HTTP header, it replaces it with the real value from its own environment.
+When the router sees `SUISOU__ANTHROPIC_API_KEY` in an outbound HTTP header, it replaces it with the real `ANTHROPIC_API_KEY` from its own environment. The matching header is defined in `router/config.toml` under `[services.<name>.credentials]`.
 
 ### `compose.override.yml`
 
-Optional. Use this to pass environment variables to containers, or any other per-user Docker Compose overrides. Docker Compose automatically merges this with `compose.yml`.
+Optional. Use this for per-user Docker Compose overrides (credentials, extra services, etc.). Docker Compose automatically merges this with `compose.yml`.
 
 ```sh
 cp compose.override.example.yml compose.override.yml
-```
-
-The router container needs the real API keys passed through:
-
-```yaml
-services:
-  router:
-    environment:
-      - ANTHROPIC_API_KEY
 ```
 
 ### Secrets
