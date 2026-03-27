@@ -12,7 +12,7 @@ services:
     # --- Ollama example ---
     # To use a local Ollama instance on the host, uncomment the onboard
     # flags below and run:
-    #   docker compose run --rm --no-deps openclaw node openclaw.mjs onboard \
+    #   docker compose run --rm openclaw node openclaw.mjs onboard \
     #     --mode local --no-install-daemon --auth-choice custom-api-key \
     #     --custom-base-url http://host.docker.internal:11434/v1 \
     #     --custom-model-id nemotron-cascade-2:30b \

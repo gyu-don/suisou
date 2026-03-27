@@ -8,9 +8,9 @@ USER mitmproxy
 
 COPY addon.py /opt/suisou/addon.py
 
-EXPOSE 8080
+EXPOSE 51820/udp
 
 ENTRYPOINT ["mitmdump", "--set", "confdir=/home/mitmproxy/.mitmproxy", \
             "--set", "ssl_verify_upstream_trusted_ca=/etc/ssl/certs/ca-certificates.crt", \
             "-s", "/opt/suisou/addon.py", \
-            "--listen-port", "8080"]
+            "--mode", "wireguard"]

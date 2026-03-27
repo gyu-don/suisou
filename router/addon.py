@@ -6,7 +6,7 @@ import tomllib
 from fnmatch import fnmatch
 from pathlib import Path
 
-from mitmproxy import ctx, http, websocket
+from mitmproxy import ctx, http
 
 CONFIG_PATH = Path("/etc/suisou/config.toml")
 DUMMY_PREFIX = "SUISOU__"
@@ -43,8 +43,56 @@ class SuisouAddon:
             f"{len(self.credentials)} credential rules"
         )
 
-    def request(self, flow: http.HTTPFlow) -> None:
+    def _get_host(self, flow: http.HTTPFlow) -> str | None:
+        """Return the logical hostname for allowlist matching.
+
+        Uses ``pretty_host`` (Host / :authority header) for domain matching
+        because ``flow.request.host`` returns the raw destination IP in
+        WireGuard transparent proxy mode.
+
+        To prevent Host-header spoofing (a client claiming an allowed domain
+        while connecting to a blocked destination):
+
+        - **TLS**: the SNI — set at the transport layer and verified against
+          the upstream certificate by mitmproxy — must match ``pretty_host``.
+        - **Plain HTTP**: ``pretty_host`` is trusted only when the matching
+          endpoint has ``allow_plain_http = true`` in config.  Without that
+          flag, plain-HTTP requests are blocked because there is no
+          transport-level signal to verify the Host header.
+        """
         host = flow.request.pretty_host
+        if flow.client_conn.tls_established:
+            sni = flow.client_conn.sni
+            if sni and sni != host:
+                ctx.log.warn(
+                    f"suisou: Host/SNI mismatch: "
+                    f"Host={host!r}, SNI={sni!r} — blocking"
+                )
+                return None
+        else:
+            if not self._plain_http_allowed(host):
+                ctx.log.warn(
+                    f"suisou: plain HTTP not allowed for {host!r} — blocking"
+                )
+                return None
+        return host
+
+    def _plain_http_allowed(self, host: str) -> bool:
+        return any(
+            ep.get("allow_plain_http", False)
+            for ep in self.endpoints
+            if fnmatch(host, ep["domain"])
+        )
+
+    def request(self, flow: http.HTTPFlow) -> None:
+        host = self._get_host(flow)
+        if host is None:
+            flow.response = http.Response.make(
+                403,
+                "Blocked by suisou: untrusted Host header",
+                {"Content-Type": "text/plain"},
+            )
+            return
         method = flow.request.method.upper()
 
         # --- allowlist check ---
@@ -103,24 +151,32 @@ class SuisouAddon:
             if DUMMY_PREFIX not in content:
                 return
             try:
-                data = json.loads(content)
+                json.loads(content)
             except json.JSONDecodeError:
                 return
-            replaced = self._replace_markers(content)
+            host = flow.request.pretty_host
+            allowed_envs = {
+                rule["env"]
+                for rule in self.credentials
+                if fnmatch(host, rule["domain"])
+            }
+            replaced = self._replace_markers(content, allowed_envs)
             if replaced != content:
                 msg.text = replaced
                 ctx.log.info(
                     f"suisou: injected credentials in WebSocket message "
-                    f"(host={flow.request.pretty_host})"
+                    f"(host={host})"
                 )
 
     @staticmethod
-    def _replace_markers(text: str) -> str:
-        """Replace all SUISOU__<ENV> markers in a string with real values."""
+    def _replace_markers(text: str, allowed_envs: set[str]) -> str:
+        """Replace SUISOU__<ENV> markers with real values for allowed env vars only."""
         import re
 
         def _sub(m: re.Match) -> str:
             env_name = m.group(1)
+            if env_name not in allowed_envs:
+                return m.group(0)
             return os.environ.get(env_name, m.group(0))
 
         return re.sub(rf"{DUMMY_PREFIX}(\w+)", _sub, text)

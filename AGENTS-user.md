@@ -6,6 +6,7 @@ For detailed OpenClaw documentation, see <https://openclaw.ai/> and `references/
 
 - Docker and Docker Compose
 - `jq` (for extracting the gateway token)
+- Linux kernel 5.6+ (for built-in WireGuard support)
 
 ## Quick Start
 
@@ -17,8 +18,8 @@ Run onboard once to configure the gateway (see [official docs](https://docs.open
 
 ```sh
 docker compose build
-docker compose run --rm --no-deps --entrypoint node openclaw \
-  openclaw.mjs onboard --mode local --no-install-daemon
+docker compose run --rm openclaw node openclaw.mjs onboard \
+  --mode local --no-install-daemon
 ```
 
 Then start the services:
@@ -129,9 +130,14 @@ The AI agent container. Interact with it using standard Docker commands:
 docker compose exec openclaw bash
 ```
 
+### wg-client
+
+Establishes a WireGuard tunnel to the router and enforces an iptables kill-switch that blocks all outbound traffic except through the tunnel. The openclaw container shares this network namespace but has no `NET_ADMIN` capability, so it cannot alter the firewall rules.
+
 ### router
 
-Proxies and controls the agent's outbound internet access.
+Proxies and controls the agent's outbound internet access via mitmproxy in WireGuard mode.
 
+- All traffic from the agent is transparently intercepted through the WireGuard tunnel — no `HTTP_PROXY` configuration required.
 - Allows or blocks requests per domain and HTTP method via a service-based allowlist.
 - For configured services, transparently replaces `SUISOU__*` credential markers in outbound requests with real values.
