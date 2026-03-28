@@ -35,10 +35,30 @@ docker compose ps
 docker compose logs router --tail=20
 ```
 
+When changes affect routing, allowlist enforcement, or credential injection, also
+run an end-to-end policy check against the live stack. If the environment is
+managed by Doppler, use `doppler run -- docker compose ...` for these commands.
+
+Required checks:
+
+- Allowed outbound traffic still succeeds. Example: a `GET` to an allowlisted
+  HTTPS domain such as `https://github.com/` returns `200`.
+- Blocked outbound traffic is still denied. Example: a `GET` to a non-allowlisted
+  HTTPS domain such as `https://example.com/` returns `403`.
+- Credential injection only expands the env vars explicitly allowed for the
+  matched service or host.
+- Markers for env vars that are not allowed for that service or host remain
+  unchanged.
+
+These checks are mandatory for changes to `router/addon.py`, `router/config.toml`,
+`compose.yml`, `wg-client/`, and sandbox entrypoint or networking logic. They are
+part of the project's core security boundary, not optional smoke tests.
+
 ## Project Layout
 
 ```
-compose.yml          # Service definitions (openclaw, router, gateway-proxy)
+compose.yml          # Service definitions (openclaw, wg-client, router)
+wg-client/           # WireGuard client container (tunnel + kill-switch)
 references/          # Related projects (read-only context, not upstream)
   openclaw/          # OpenClaw source — primary reference for usage and integration
   OpenShell/

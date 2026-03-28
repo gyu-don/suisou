@@ -4,36 +4,38 @@ services:
       context: sandbox
     init: true
     restart: unless-stopped
-    depends_on:
-      router:
-        condition: service_started
-    networks:
-      - sandbox
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    environment:
-      HTTP_PROXY: http://router:8080
-      HTTPS_PROXY: http://router:8080
-      http_proxy: http://router:8080
-      https_proxy: http://router:8080
-      NO_PROXY: ""
-      no_proxy: ""
+    network_mode: "service:wg-client"
     volumes:
       - mitmproxy-ca:/mitmproxy-ca:ro
       - openclaw-config:/home/node/.openclaw
-
-  gateway-proxy:
-    image: alpine/socat:latest
-    init: true
     depends_on:
-      openclaw:
-        condition: service_started
-    command: TCP-LISTEN:18789,fork,reuseaddr TCP:openclaw:18789
+      wg-client:
+        condition: service_healthy
+
+  wg-client:
+    build:
+      context: wg-client
+    init: true
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    cap_drop:
+      - ALL
+    volumes:
+      - mitmproxy-ca:/mitmproxy-ca:ro
     ports:
       - "18789:18789"
+    depends_on:
+      router:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "test", "-f", "/tmp/wg-ready"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
     networks:
-      - sandbox
-      - external
+      - tunnel
 
   router:
     build:
@@ -42,19 +44,23 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     networks:
-      - sandbox
+      - tunnel
       - external
     volumes:
       - mitmproxy-ca:/home/mitmproxy/.mitmproxy
       - ./router/config.toml:/etc/suisou/config.toml:ro
+    healthcheck:
+      test: ["CMD", "test", "-f", "/home/mitmproxy/.mitmproxy/wireguard.conf"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
 
 volumes:
   openclaw-config:
   mitmproxy-ca:
 
 networks:
-  sandbox:
+  tunnel:
     driver: bridge
-    internal: true
   external:
     driver: bridge
