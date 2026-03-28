@@ -56,3 +56,115 @@ endpoints = [
 # header = "authorization"
 # env    = "GITHUB_TOKEN"
 # prefix = "Bearer "
+
+# --- Discord ---
+# [services.discord]
+# endpoints = [
+#   { domain = "discord.com", methods = ["GET", "POST", "PUT", "PATCH", "DELETE"] },
+#   { domain = "*.discord.gg" },
+#   { domain = "cdn.discordapp.com", methods = ["GET"] },
+#   { domain = "gateway.discord.gg" },
+# ]
+#
+# [services.discord.credentials]
+# header = "authorization"
+# env    = "DISCORD_BOT_TOKEN"
+
+# --- Tavily (web search API) ---
+# [services.tavily]
+# endpoints = [
+#   { domain = "api.tavily.com", methods = ["GET", "POST"] },
+# ]
+#
+# [services.tavily.credentials]
+# header = "authorization"
+# env = "TAVILY_API_KEY"
+
+# --- Local Ollama ---
+# For a local Ollama instance on the host (see compose.override.example.yml).
+# [services.ollama]
+# endpoints = [
+#   { domain = "host.docker.internal", allow_plain_http = true },
+# ]
+
+# --- Package registries ---
+[services.pkg]
+endpoints = [
+  { domain = "pypi.org",               methods = ["GET"] },
+  { domain = "files.pythonhosted.org", methods = ["GET"] },
+  { domain = "npmjs.com",              methods = ["GET"] },
+  { domain = "registry.npmjs.org",     methods = ["GET"] },
+  { domain = "packagist.org",          methods = ["GET"] },
+  { domain = "nuget.org",              methods = ["GET"] },
+  { domain = "getcomposer.org",        methods = ["GET"] },
+]
+
+# --- CDN ---
+[services.cdn]
+endpoints = [
+  { domain = "cdn.jsdelivr.net", methods = ["GET"] },
+  { domain = "unpkg.com",        methods = ["GET"] },
+]
+
+# --- Code hosting ---
+[services.code-hosting]
+endpoints = [
+  { domain = "gitlab.com",             methods = ["GET"] },
+  { domain = "*.gitlab.com",           methods = ["GET"] },
+  { domain = "*.gitlab.io",            methods = ["GET"] },
+  { domain = "bitbucket.org",          methods = ["GET"] },
+  { domain = "codeberg.org",           methods = ["GET"] },
+  { domain = "docker.com",             methods = ["GET"] },
+  { domain = "hub.docker.com",         methods = ["GET"] },
+  { domain = "registry-1.docker.io",   methods = ["GET"] },
+  { domain = "ghcr.io",                methods = ["GET"] },
+  { domain = "quay.io",                methods = ["GET"] },
+]
+
+# --- Documentation ---
+[services.docs_openclaw]
+endpoints = [
+  { domain = "docs.openclaw.ai", methods = ["GET"] },
+]
+
+[services.docs]
+endpoints = [
+  { domain = "nodejs.org",     methods = ["GET"] },
+  { domain = "react.dev",      methods = ["GET"] },
+  { domain = "git-scm.com",    methods = ["GET"] },
+  { domain = "postgresql.org", methods = ["GET"] },
+  { domain = "web.dev",        methods = ["GET"] },
+  { domain = "msdn.com",       methods = ["GET"] },
+]
+
+[services.reference]
+endpoints = [
+  { domain = "stackoverflow.com", methods = ["GET"] },
+  { domain = "stackexchange.com", methods = ["GET"] },
+  { domain = "w3.org",            methods = ["GET"] },
+  { domain = "ietf.org",          methods = ["GET"] },
+  { domain = "rfc-editor.org",    methods = ["GET"] },
+  { domain = "mozilla.org",       methods = ["GET"] },
+  { domain = "apache.org",        methods = ["GET"] },
+  { domain = "gnu.org",           methods = ["GET"] },
+  { domain = "openssl.org",       methods = ["GET"] },
+  { domain = "nginx.org",         methods = ["GET"] },
+]
+
+[services.wikipedia]
+endpoints = [
+  { domain = "*.wikipedia.org", methods = ["GET"] },
+  { domain = "*.wikimedia.org", methods = ["GET"] },
+]
+
+[services.academic]
+endpoints = [
+  { domain = "arxiv.org",           methods = ["GET"] },
+  { domain = "doi.org",             methods = ["GET"] },
+  { domain = "semanticscholar.org", methods = ["GET"] },
+  { domain = "ieee.org",            methods = ["GET"] },
+  { domain = "acm.org",             methods = ["GET"] },
+  { domain = "biorxiv.org",         methods = ["GET"] },
+  { domain = "science.org",         methods = ["GET"] },
+  { domain = "springeropen.com",    methods = ["GET"] },
+]
