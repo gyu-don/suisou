@@ -14,7 +14,8 @@
 
 [services.anthropic]
 endpoints = [
-  { domain = "api.anthropic.com", methods = ["POST"] },
+  { domain = "api.anthropic.com", methods = ["POST"], paths = ["/v1/messages", "/v1/messages/count_tokens"] },
+  { domain = "api.anthropic.com", methods = ["GET"],  paths = ["/v1/models", "/v1/models/*"] },
 ]
 
 [services.anthropic.credentials]
@@ -122,19 +123,16 @@ endpoints = [
 ]
 
 # --- Documentation ---
-[services.docs_openclaw]
-endpoints = [
-  { domain = "docs.openclaw.ai", methods = ["GET"] },
-]
-
 [services.docs]
 endpoints = [
+  { domain = "docs.openclaw.ai", methods = ["GET"] },
   { domain = "nodejs.org",     methods = ["GET"] },
   { domain = "react.dev",      methods = ["GET"] },
   { domain = "git-scm.com",    methods = ["GET"] },
   { domain = "postgresql.org", methods = ["GET"] },
   { domain = "web.dev",        methods = ["GET"] },
   { domain = "msdn.com",       methods = ["GET"] },
+  { domain = "developer.mozilla.org", methods = ["GET"] },
 ]
 
 [services.reference]
