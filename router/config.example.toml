@@ -30,7 +30,6 @@ endpoints = [
 [services.openai.credentials]
 header = "authorization"
 env    = "OPENAI_API_KEY"
-prefix = "Bearer "
 
 # --- GitHub ---
 # Git clone/fetch uses Smart HTTP:
@@ -56,7 +55,6 @@ endpoints = [
 # [services.github-api.credentials]
 # header = "authorization"
 # env    = "GITHUB_TOKEN"
-# prefix = "Bearer "
 
 # --- Discord ---
 # [services.discord]
@@ -221,7 +219,6 @@ endpoints = [
 # [services.moltbook.credentials]
 # header = "authorization"
 # env    = "MOLTBOOK_API_KEY"
-# prefix = "Bearer "
 
 [services.academic]
 endpoints = [

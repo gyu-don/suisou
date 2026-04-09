@@ -142,10 +142,7 @@ class SuisouAddon:
                 continue
             real = os.environ.get(rule["env"], "")
             if real:
-                prefix = rule.get("prefix", "")
-                flow.request.headers[header] = current.replace(
-                    marker, prefix + real
-                )
+                flow.request.headers[header] = current.replace(marker, real)
             else:
                 ctx.log.warn(
                     f"suisou: env var {rule['env']!r} not set for {host}"
