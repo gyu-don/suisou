@@ -85,10 +85,35 @@ class SuisouAddon:
         )
 
     @staticmethod
-    def _format_target(flow: http.HTTPFlow) -> str:
+    def _get_port(flow: http.HTTPFlow) -> int:
+        return int(flow.request.port)
+
+    @staticmethod
+    def _endpoint_matches(
+        ep: dict, host: str, method: str, path: str, port: int
+    ) -> bool:
+        if not fnmatch(host, ep["domain"]):
+            return False
+
+        methods = [m.upper() for m in ep.get("methods", [])]
+        if methods and method not in methods:
+            return False
+
+        paths = ep.get("paths", [])
+        if paths and not any(fnmatch(path, pattern) for pattern in paths):
+            return False
+
+        ports = ep.get("ports", [])
+        if ports and port not in [int(p) for p in ports]:
+            return False
+
+        return True
+
+    def _format_target(self, flow: http.HTTPFlow) -> str:
         host = flow.request.pretty_host
+        port = self._get_port(flow)
         path = flow.request.path or "/"
-        return f"{host}{path}"
+        return f"{host}:{port}{path}"
 
     def request(self, flow: http.HTTPFlow) -> None:
         host = self._get_host(flow)
@@ -100,20 +125,14 @@ class SuisouAddon:
             )
             return
         method = flow.request.method.upper()
+        path = flow.request.path or "/"
+        port = self._get_port(flow)
 
         # --- allowlist check ---
-        allowed = False
-        for ep in self.endpoints:
-            if fnmatch(host, ep["domain"]):
-                methods = [m.upper() for m in ep.get("methods", [])]
-                if not methods or method in methods:
-                    paths = ep.get("paths", [])
-                    if not paths or any(
-                        fnmatch(flow.request.path, p) for p in paths
-                    ):
-                        allowed = True
-                if allowed:
-                    break
+        allowed = any(
+            self._endpoint_matches(ep, host, method, path, port)
+            for ep in self.endpoints
+        )
 
         if not allowed:
             ctx.log.warn(
@@ -122,7 +141,7 @@ class SuisouAddon:
             )
             flow.response = http.Response.make(
                 403,
-                f"Blocked by suisou allowlist: {method} {host}",
+                f"Blocked by suisou allowlist: {method} {host}:{port}",
                 {"Content-Type": "text/plain"},
             )
             return

@@ -79,11 +79,23 @@ endpoints = [
 # header = "authorization"
 # env = "TAVILY_API_KEY"
 
-# --- Local Ollama ---
-# For a local Ollama instance on the host (see compose.override.example.yml).
+# --- Local LLM ---
+# For a local LLM instance on the host (see compose.override.example.yml).
+# Uncomment the block matching your server and its default port.
+#
 # [services.ollama]
 # endpoints = [
-#   { domain = "host.docker.internal", allow_plain_http = true },
+#   { domain = "host.docker.internal", allow_plain_http = true, ports = [11434] },
+# ]
+#
+# [services.llama-cpp]
+# endpoints = [
+#   { domain = "host.docker.internal", allow_plain_http = true, ports = [8080] },
+# ]
+#
+# [services.vllm]
+# endpoints = [
+#   { domain = "host.docker.internal", allow_plain_http = true, ports = [8000] },
 # ]
 
 # --- Package registries ---
