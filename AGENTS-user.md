@@ -71,21 +71,44 @@ cp compose.override.example.yml compose.override.yml
 
 ### Secrets
 
-Provide API key environment variables when starting. [Doppler](https://docs.doppler.com/docs/cli) is recommended:
+Provide API key environment variables when starting. [Doppler](https://docs.doppler.com/docs/cli) is recommended.
+
+Install the CLI, run `doppler login` (first time), then `doppler setup` in this directory (once per project). Both are interactive — run them in a regular terminal. See the [Doppler CLI docs](https://docs.doppler.com/docs/install-cli) for install instructions.
+
+#### Setting secrets
+
+Open the dashboard in a browser:
+
+```sh
+doppler open
+```
+
+Or via CLI — but be aware that any value written in a command is recorded in shell history and, if run through an AI agent, in its session context as well:
+
+```sh
+doppler secrets set ANTHROPIC_API_KEY=sk-ant-...
+```
+
+#### Running with secrets injected
 
 ```sh
 doppler run -- docker compose up
 ```
 
-Other options:
+If you need to specify a project or config explicitly (e.g. in CI):
 
 ```sh
-# inline
-ANTHROPIC_API_KEY=sk-ant-... docker compose up
+doppler run -p PROJECT -c CONFIG -- docker compose up
+```
 
+#### Other options
+
+```sh
 # 1Password CLI
 op run --env-file=.env -- docker compose up
 ```
+
+Passing secrets inline (e.g. `ANTHROPIC_API_KEY=sk-ant-... docker compose up`) is not recommended — the value ends up in shell history and, if run through an AI agent, in its session context as well.
 
 ## Remote Access
 
@@ -141,3 +164,88 @@ Proxies and controls the agent's outbound internet access via mitmproxy in WireG
 - All traffic from the agent is transparently intercepted through the WireGuard tunnel — no `HTTP_PROXY` configuration required.
 - Allows or blocks requests per domain and HTTP method via a service-based allowlist.
 - For configured services, transparently replaces `SUISOU__*` credential markers in outbound requests with real values.
+
+## External service integrations
+
+### Moltbook (read-only)
+
+[Moltbook](https://www.moltbook.com/) is an AI agent social network. All endpoints require an API key — anonymous reads are not possible.
+
+**Step 1 — Register the agent (one-time, outside the sandbox)**
+
+```sh
+curl -s -X POST https://www.moltbook.com/api/v1/agents/register \
+  -H "Content-Type: application/json" \
+  -d '{"name": "YOUR_AGENT_NAME", "description": "YOUR_DESCRIPTION"}' | jq .
+```
+
+Save the returned `api_key`. The response also contains a `claim_url` and `verification_code`.
+
+**Step 2 — Claim the account**
+
+Open the `claim_url` in a browser, verify your email, then post the `verification_code` to X (Twitter). Moltbook checks the tweet to confirm ownership. The account becomes active once verified.
+
+**Step 3 — Store the API key**
+
+Set `MOLTBOOK_API_KEY` to the value returned in step 1, using whichever method you use for secrets (see [Secrets](#secrets)).
+
+**Step 4 — Configure credential injection**
+
+Add to `compose.override.yml`:
+
+```yaml
+services:
+  openclaw:
+    environment:
+      - MOLTBOOK_API_KEY=SUISOU__MOLTBOOK_API_KEY
+  router:
+    environment:
+      - MOLTBOOK_API_KEY
+```
+
+**Step 5 — Add the service to `router/config.toml`**
+
+Uncomment the Moltbook block (see `router/config.example.toml`). Only `GET` is allowed, so the agent can read feeds, posts, comments, profiles, and search results but cannot post, comment, vote, follow, or modify anything.
+
+> **Note:** Always use `www.moltbook.com` (with `www`). Without it, the server redirects and strips the Authorization header, exposing a broken request.
+
+### Discord
+
+See the [OpenClaw Discord channel docs](https://docs.openclaw.ai/channels/discord.md) for the full OpenClaw-side configuration. The suisou-specific steps are below.
+
+**Step 1 — Create a Discord bot**
+
+In the [Discord Developer Portal](https://discord.com/developers/applications):
+
+1. Create a new application and add a bot.
+2. Under **Bot**, enable the following privileged Gateway Intents:
+   - **Message Content Intent** (required)
+   - **Server Members Intent** (recommended)
+3. Under **OAuth2 → URL Generator**, select the `bot` and `applications.commands` scopes. Assign at minimum: Send Messages, Read Message History, Attach Files.
+4. Copy the generated URL, open it in a browser, and invite the bot to your server.
+
+**Step 2 — Store the bot token**
+
+Set `DISCORD_BOT_TOKEN` to the token from the Developer Portal, using whichever method you use for secrets (see [Secrets](#secrets)).
+
+**Step 3 — Configure credential injection**
+
+Add to `compose.override.yml`:
+
+```yaml
+services:
+  openclaw:
+    environment:
+      - DISCORD_BOT_TOKEN=SUISOU__DISCORD_BOT_TOKEN
+  router:
+    environment:
+      - DISCORD_BOT_TOKEN
+```
+
+**Step 4 — Add the service to `router/config.toml`**
+
+Uncomment the Discord block (see `router/config.example.toml`). It allows GET/POST/PUT/PATCH/DELETE on `discord.com` (REST API), GET on `cdn.discordapp.com` (attachments), and unrestricted access to `gateway.discord.gg` and `*.discord.gg` (WebSocket gateway).
+
+**Step 5 — Configure the OpenClaw gateway**
+
+Follow the OpenClaw docs to connect the Discord channel to the gateway. The bot token is passed via the environment variable set above.
