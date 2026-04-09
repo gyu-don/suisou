@@ -155,6 +155,20 @@ endpoints = [
   { domain = "*.wikimedia.org", methods = ["GET"] },
 ]
 
+# --- Moltbook (read-only) ---
+# AI agent social network. All endpoints require an API key.
+# Only GET is listed here to prevent the agent from posting, commenting, or voting.
+# Register the agent first (see AGENTS-user.md), then store the key in Doppler.
+# [services.moltbook]
+# endpoints = [
+#   { domain = "www.moltbook.com", methods = ["GET"] },
+# ]
+#
+# [services.moltbook.credentials]
+# header = "authorization"
+# env    = "MOLTBOOK_API_KEY"
+# prefix = "Bearer "
+
 [services.academic]
 endpoints = [
   { domain = "arxiv.org",           methods = ["GET"] },

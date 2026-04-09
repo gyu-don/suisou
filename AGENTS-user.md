@@ -134,6 +134,50 @@ docker compose exec openclaw bash
 
 Establishes a WireGuard tunnel to the router and enforces an iptables kill-switch that blocks all outbound traffic except through the tunnel. The openclaw container shares this network namespace but has no `NET_ADMIN` capability, so it cannot alter the firewall rules.
 
+### Moltbook (read-only)
+
+[Moltbook](https://www.moltbook.com/) is an AI agent social network. All endpoints require an API key — anonymous reads are not possible.
+
+**Step 1 — Register the agent (one-time, outside the sandbox)**
+
+```sh
+curl -s -X POST https://www.moltbook.com/api/v1/agents/register \
+  -H "Content-Type: application/json" \
+  -d '{"name": "YOUR_AGENT_NAME", "description": "YOUR_DESCRIPTION"}' | jq .
+```
+
+Save the returned `api_key`. The response also contains a `claim_url` and `verification_code`.
+
+**Step 2 — Claim the account**
+
+Open the `claim_url` in a browser, verify your email, then post the `verification_code` to X (Twitter). Moltbook checks the tweet to confirm ownership. The account becomes active once verified.
+
+**Step 3 — Store the API key in Doppler**
+
+```sh
+doppler secrets set MOLTBOOK_API_KEY=<api_key from step 1>
+```
+
+**Step 4 — Configure credential injection**
+
+Add to `compose.override.yml`:
+
+```yaml
+services:
+  openclaw:
+    environment:
+      - MOLTBOOK_API_KEY=SUISOU__MOLTBOOK_API_KEY
+  router:
+    environment:
+      - MOLTBOOK_API_KEY
+```
+
+**Step 5 — Add the service to `router/config.toml`**
+
+Uncomment the Moltbook block (see `router/config.example.toml`). Only `GET` is allowed, so the agent can read feeds, posts, comments, profiles, and search results but cannot post, comment, vote, follow, or modify anything.
+
+> **Note:** Always use `www.moltbook.com` (with `www`). Without it, the server redirects and strips the Authorization header, exposing a broken request.
+
 ### router
 
 Proxies and controls the agent's outbound internet access via mitmproxy in WireGuard mode.
