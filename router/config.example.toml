@@ -155,6 +155,60 @@ endpoints = [
   { domain = "*.wikimedia.org", methods = ["GET"] },
 ]
 
+[services.tech-blogs]
+endpoints = [
+  { domain = "zenn.dev",             methods = ["GET"] },
+  { domain = "qiita.com",            methods = ["GET"] },
+  { domain = "note.com",             methods = ["GET"] },
+  { domain = "dev.to",               methods = ["GET"] },
+  { domain = "medium.com",           methods = ["GET"] },
+  { domain = "hatenablog.com",       methods = ["GET"] },
+  { domain = "*.hatenablog.com",     methods = ["GET"] },
+  { domain = "substack.com",         methods = ["GET"] },
+  { domain = "*.substack.com",       methods = ["GET"] },
+  { domain = "news.ycombinator.com", methods = ["GET"] },
+]
+
+[services.ai-vendor-blogs]
+endpoints = [
+  { domain = "openai.com",             methods = ["GET"] },
+  { domain = "anthropic.com",          methods = ["GET"] },
+  { domain = "deepmind.google",        methods = ["GET"] },
+  { domain = "research.google",        methods = ["GET"] },
+  { domain = "blog.google",            methods = ["GET"] },
+  { domain = "ai.meta.com",            methods = ["GET"] },
+  { domain = "huggingface.co",         methods = ["GET"] },
+  { domain = "discuss.huggingface.co", methods = ["GET"] },
+  { domain = "mistral.ai",             methods = ["GET"] },
+  { domain = "stability.ai",           methods = ["GET"] },
+  { domain = "cohere.com",             methods = ["GET"] },
+]
+
+[services.news]
+endpoints = [
+  { domain = "asahi.com",       methods = ["GET"] },
+  { domain = "mainichi.jp",     methods = ["GET"] },
+  { domain = "yomiuri.co.jp",   methods = ["GET"] },
+  { domain = "nikkei.com",      methods = ["GET"] },
+  { domain = "itmedia.co.jp",   methods = ["GET"] },
+  { domain = "reuters.com",     methods = ["GET"] },
+  { domain = "bbc.com",         methods = ["GET"] },
+  { domain = "theguardian.com", methods = ["GET"] },
+  { domain = "nytimes.com",     methods = ["GET"] },
+  { domain = "techcrunch.com",  methods = ["GET"] },
+  { domain = "wired.com",       methods = ["GET"] },
+  { domain = "arstechnica.com", methods = ["GET"] },
+  { domain = "theverge.com",    methods = ["GET"] },
+]
+
+[services.tokyo-events]
+endpoints = [
+  { domain = "gotokyo.org",       methods = ["GET"] },
+  { domain = "tokyoartbeat.com",  methods = ["GET"] },
+  { domain = "timeout.com",       methods = ["GET"] },
+  { domain = "metro.tokyo.lg.jp", methods = ["GET"] },
+]
+
 # --- Moltbook (read-only) ---
 # AI agent social network. All endpoints require an API key.
 # Only GET is listed here to prevent the agent from posting, commenting, or voting.
