@@ -162,11 +162,9 @@ Save the returned `api_key`. The response also contains a `claim_url` and `verif
 
 Open the `claim_url` in a browser, verify your email, then post the `verification_code` to X (Twitter). Moltbook checks the tweet to confirm ownership. The account becomes active once verified.
 
-**Step 3 — Store the API key in Doppler**
+**Step 3 — Store the API key**
 
-```sh
-doppler secrets set MOLTBOOK_API_KEY=<api_key from step 1>
-```
+Set `MOLTBOOK_API_KEY` to the value returned in step 1, using whichever method you use for secrets (see [Secrets](#secrets)).
 
 **Step 4 — Configure credential injection**
 
@@ -203,11 +201,9 @@ In the [Discord Developer Portal](https://discord.com/developers/applications):
 3. Under **OAuth2 → URL Generator**, select the `bot` and `applications.commands` scopes. Assign at minimum: Send Messages, Read Message History, Attach Files.
 4. Copy the generated URL, open it in a browser, and invite the bot to your server.
 
-**Step 2 — Store the bot token in Doppler**
+**Step 2 — Store the bot token**
 
-```sh
-doppler secrets set DISCORD_BOT_TOKEN=<token from Developer Portal>
-```
+Set `DISCORD_BOT_TOKEN` to the token from the Developer Portal, using whichever method you use for secrets (see [Secrets](#secrets)).
 
 **Step 3 — Configure credential injection**
 
