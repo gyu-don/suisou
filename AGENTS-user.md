@@ -94,11 +94,26 @@ doppler login
 
 #### Project setup (once per project)
 
-Run this in the suisou directory to link it to a Doppler project and config:
+`doppler setup` is interactive (prompts to select project and config). Run it in a regular terminal:
 
 ```sh
 doppler setup
 ```
+
+Alternatively, create `doppler.yaml` in the suisou directory and run the non-interactive form:
+
+```yaml
+# doppler.yaml
+setup:
+  - project: your-project-name
+    config: dev
+```
+
+```sh
+doppler setup --no-interactive
+```
+
+You can also skip setup entirely by passing project and config explicitly each time (see [Running with secrets injected](#running-with-secrets-injected)).
 
 #### Setting secrets
 
