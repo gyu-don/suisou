@@ -134,6 +134,16 @@ docker compose exec openclaw bash
 
 Establishes a WireGuard tunnel to the router and enforces an iptables kill-switch that blocks all outbound traffic except through the tunnel. The openclaw container shares this network namespace but has no `NET_ADMIN` capability, so it cannot alter the firewall rules.
 
+### router
+
+Proxies and controls the agent's outbound internet access via mitmproxy in WireGuard mode.
+
+- All traffic from the agent is transparently intercepted through the WireGuard tunnel — no `HTTP_PROXY` configuration required.
+- Allows or blocks requests per domain and HTTP method via a service-based allowlist.
+- For configured services, transparently replaces `SUISOU__*` credential markers in outbound requests with real values.
+
+## External service integrations
+
 ### Moltbook (read-only)
 
 [Moltbook](https://www.moltbook.com/) is an AI agent social network. All endpoints require an API key — anonymous reads are not possible.
@@ -178,10 +188,45 @@ Uncomment the Moltbook block (see `router/config.example.toml`). Only `GET` is a
 
 > **Note:** Always use `www.moltbook.com` (with `www`). Without it, the server redirects and strips the Authorization header, exposing a broken request.
 
-### router
+### Discord
 
-Proxies and controls the agent's outbound internet access via mitmproxy in WireGuard mode.
+See the [OpenClaw Discord channel docs](https://docs.openclaw.ai/channels/discord.md) for the full OpenClaw-side configuration. The suisou-specific steps are below.
 
-- All traffic from the agent is transparently intercepted through the WireGuard tunnel — no `HTTP_PROXY` configuration required.
-- Allows or blocks requests per domain and HTTP method via a service-based allowlist.
-- For configured services, transparently replaces `SUISOU__*` credential markers in outbound requests with real values.
+**Step 1 — Create a Discord bot**
+
+In the [Discord Developer Portal](https://discord.com/developers/applications):
+
+1. Create a new application and add a bot.
+2. Under **Bot**, enable the following privileged Gateway Intents:
+   - **Message Content Intent** (required)
+   - **Server Members Intent** (recommended)
+3. Under **OAuth2 → URL Generator**, select the `bot` and `applications.commands` scopes. Assign at minimum: Send Messages, Read Message History, Attach Files.
+4. Copy the generated URL, open it in a browser, and invite the bot to your server.
+
+**Step 2 — Store the bot token in Doppler**
+
+```sh
+doppler secrets set DISCORD_BOT_TOKEN=<token from Developer Portal>
+```
+
+**Step 3 — Configure credential injection**
+
+Add to `compose.override.yml`:
+
+```yaml
+services:
+  openclaw:
+    environment:
+      - DISCORD_BOT_TOKEN=SUISOU__DISCORD_BOT_TOKEN
+  router:
+    environment:
+      - DISCORD_BOT_TOKEN
+```
+
+**Step 4 — Add the service to `router/config.toml`**
+
+Uncomment the Discord block (see `router/config.example.toml`). It allows GET/POST/PUT/PATCH/DELETE on `discord.com` (REST API), GET on `cdn.discordapp.com` (attachments), and unrestricted access to `gateway.discord.gg` and `*.discord.gg` (WebSocket gateway).
+
+**Step 5 — Configure the OpenClaw gateway**
+
+Follow the OpenClaw docs to connect the Discord channel to the gateway. The bot token is passed via the environment variable set above.
