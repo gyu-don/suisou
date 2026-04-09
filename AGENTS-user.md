@@ -102,17 +102,13 @@ doppler setup
 
 #### Setting secrets
 
-Via CLI:
+Via CLI in interactive mode (prompts for the value, keeps it out of shell history):
 
 ```sh
-# single
-doppler secrets set ANTHROPIC_API_KEY=sk-ant-...
-
-# multiple at once
-doppler secrets set ANTHROPIC_API_KEY=sk-ant-... MOLTBOOK_API_KEY=mb-...
+doppler secrets set ANTHROPIC_API_KEY
 ```
 
-Or open the dashboard in a browser:
+Or open the dashboard in a browser (recommended for multiple secrets):
 
 ```sh
 doppler open
