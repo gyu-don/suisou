@@ -112,7 +112,11 @@ doppler secrets set ANTHROPIC_API_KEY=sk-ant-...
 doppler secrets set ANTHROPIC_API_KEY=sk-ant-... MOLTBOOK_API_KEY=mb-...
 ```
 
-Or manage secrets via the browser at <https://dashboard.doppler.com>.
+Or open the dashboard in a browser:
+
+```sh
+doppler open
+```
 
 #### Running with secrets injected
 
@@ -129,12 +133,11 @@ doppler run -p PROJECT -c CONFIG -- docker compose up
 #### Other options
 
 ```sh
-# inline (no Doppler)
-ANTHROPIC_API_KEY=sk-ant-... docker compose up
-
 # 1Password CLI
 op run --env-file=.env -- docker compose up
 ```
+
+Passing secrets inline (e.g. `ANTHROPIC_API_KEY=sk-ant-... docker compose up`) is not recommended — the value ends up in shell history.
 
 ## Remote Access
 
