@@ -71,16 +71,65 @@ cp compose.override.example.yml compose.override.yml
 
 ### Secrets
 
-Provide API key environment variables when starting. [Doppler](https://docs.doppler.com/docs/cli) is recommended:
+Provide API key environment variables when starting. [Doppler](https://docs.doppler.com/docs/cli) is recommended.
+
+#### Doppler setup (first time)
+
+Install the CLI:
+
+```sh
+# macOS
+brew install dopplerhq/cli/doppler
+
+# Linux
+(curl -Ls --tlsv1.2 --proto "=https" --retry 3 https://cli.doppler.com/install.sh || \
+ wget -t 3 -qO- https://cli.doppler.com/install.sh) | sudo sh
+```
+
+Log in (opens a browser, only needed once):
+
+```sh
+doppler login
+```
+
+#### Project setup (once per project)
+
+Run this in the suisou directory to link it to a Doppler project and config:
+
+```sh
+doppler setup
+```
+
+#### Setting secrets
+
+Via CLI:
+
+```sh
+# single
+doppler secrets set ANTHROPIC_API_KEY=sk-ant-...
+
+# multiple at once
+doppler secrets set ANTHROPIC_API_KEY=sk-ant-... MOLTBOOK_API_KEY=mb-...
+```
+
+Or manage secrets via the browser at <https://dashboard.doppler.com>.
+
+#### Running with secrets injected
 
 ```sh
 doppler run -- docker compose up
 ```
 
-Other options:
+If you need to specify a project or config explicitly (e.g. in CI):
 
 ```sh
-# inline
+doppler run -p PROJECT -c CONFIG -- docker compose up
+```
+
+#### Other options
+
+```sh
+# inline (no Doppler)
 ANTHROPIC_API_KEY=sk-ant-... docker compose up
 
 # 1Password CLI
