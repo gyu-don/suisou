@@ -84,6 +84,12 @@ class SuisouAddon:
             if fnmatch(host, ep["domain"])
         )
 
+    @staticmethod
+    def _format_target(flow: http.HTTPFlow) -> str:
+        host = flow.request.pretty_host
+        path = flow.request.path or "/"
+        return f"{host}{path}"
+
     def request(self, flow: http.HTTPFlow) -> None:
         host = self._get_host(flow)
         if host is None:
@@ -110,12 +116,20 @@ class SuisouAddon:
                     break
 
         if not allowed:
+            ctx.log.warn(
+                "suisou: blocked request "
+                f"({method} {self._format_target(flow)})"
+            )
             flow.response = http.Response.make(
                 403,
                 f"Blocked by suisou allowlist: {method} {host}",
                 {"Content-Type": "text/plain"},
             )
             return
+
+        ctx.log.info(
+            f"suisou: allowed request ({method} {self._format_target(flow)})"
+        )
 
         # --- credential injection ---
         for rule in self.credentials:
@@ -137,15 +151,30 @@ class SuisouAddon:
                     f"suisou: env var {rule['env']!r} not set for {host}"
                 )
 
+    def websocket_start(self, flow: http.HTTPFlow) -> None:
+        flow.metadata["ws_client_messages"] = 0
+        flow.metadata["ws_server_messages"] = 0
+        flow.metadata["ws_injected_messages"] = 0
+        ctx.log.info(
+            f"suisou: websocket opened ({self._format_target(flow)})"
+        )
 
     def websocket_message(self, flow: http.HTTPFlow) -> None:
-        """Inject credentials into WebSocket message payloads.
+        """Inject credentials into WebSocket message payloads and count traffic.
 
         Handles Discord Gateway IDENTIFY (op 2) where the bot token is sent
         inside the JSON payload rather than an HTTP header.
         """
         assert flow.websocket is not None
         msg = flow.websocket.messages[-1]
+        if msg.from_client:
+            flow.metadata["ws_client_messages"] = (
+                int(flow.metadata.get("ws_client_messages", 0)) + 1
+            )
+        else:
+            flow.metadata["ws_server_messages"] = (
+                int(flow.metadata.get("ws_server_messages", 0)) + 1
+            )
         if msg.from_client and msg.is_text:
             content = msg.text
             if DUMMY_PREFIX not in content:
@@ -163,10 +192,18 @@ class SuisouAddon:
             replaced = self._replace_markers(content, allowed_envs)
             if replaced != content:
                 msg.text = replaced
-                ctx.log.info(
-                    f"suisou: injected credentials in WebSocket message "
-                    f"(host={host})"
+                flow.metadata["ws_injected_messages"] = (
+                    int(flow.metadata.get("ws_injected_messages", 0)) + 1
                 )
+
+    def websocket_end(self, flow: http.HTTPFlow) -> None:
+        ctx.log.info(
+            "suisou: websocket closed "
+            f"({self._format_target(flow)}, "
+            f"client_messages={int(flow.metadata.get('ws_client_messages', 0))}, "
+            f"server_messages={int(flow.metadata.get('ws_server_messages', 0))}, "
+            f"injected_messages={int(flow.metadata.get('ws_injected_messages', 0))})"
+        )
 
     @staticmethod
     def _replace_markers(text: str, allowed_envs: set[str]) -> str:

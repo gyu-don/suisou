@@ -2,3 +2,5 @@ __pycache__/
 .env
 compose.override.yml
 router/config.toml
+.tmp/
+tmp/
