@@ -108,7 +108,7 @@ Open the dashboard in a browser:
 doppler open
 ```
 
-Or via CLI (note: the value will appear in shell history):
+Or via CLI — but be aware that any value written in a command is recorded in shell history and, if run through an AI agent, in its session context as well:
 
 ```sh
 doppler secrets set ANTHROPIC_API_KEY=sk-ant-...
