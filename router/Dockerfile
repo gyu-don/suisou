@@ -12,5 +12,6 @@ EXPOSE 51820/udp
 
 ENTRYPOINT ["mitmdump", "--set", "confdir=/home/mitmproxy/.mitmproxy", \
             "--set", "ssl_verify_upstream_trusted_ca=/etc/ssl/certs/ca-certificates.crt", \
+            "--set", "flow_detail=0", \
             "-s", "/opt/suisou/addon.py", \
             "--mode", "wireguard"]
