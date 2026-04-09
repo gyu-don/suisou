@@ -133,7 +133,7 @@ doppler run -p PROJECT -c CONFIG -- docker compose up
 op run --env-file=.env -- docker compose up
 ```
 
-Passing secrets inline (e.g. `ANTHROPIC_API_KEY=sk-ant-... docker compose up`) is not recommended — the value ends up in shell history.
+Passing secrets inline (e.g. `ANTHROPIC_API_KEY=sk-ant-... docker compose up`) is not recommended — the value ends up in shell history and, if run through an AI agent, in its session context as well.
 
 ## Remote Access
 
