@@ -73,47 +73,7 @@ cp compose.override.example.yml compose.override.yml
 
 Provide API key environment variables when starting. [Doppler](https://docs.doppler.com/docs/cli) is recommended.
 
-#### Doppler setup (first time)
-
-Install the CLI:
-
-```sh
-# macOS
-brew install dopplerhq/cli/doppler
-
-# Linux
-(curl -Ls --tlsv1.2 --proto "=https" --retry 3 https://cli.doppler.com/install.sh || \
- wget -t 3 -qO- https://cli.doppler.com/install.sh) | sudo sh
-```
-
-Log in (opens a browser, only needed once):
-
-```sh
-doppler login
-```
-
-#### Project setup (once per project)
-
-`doppler setup` is interactive (prompts to select project and config). Run it in a regular terminal:
-
-```sh
-doppler setup
-```
-
-Alternatively, create `doppler.yaml` in the suisou directory and run the non-interactive form:
-
-```yaml
-# doppler.yaml
-setup:
-  - project: your-project-name
-    config: dev
-```
-
-```sh
-doppler setup --no-interactive
-```
-
-You can also skip setup entirely by passing project and config explicitly each time (see [Running with secrets injected](#running-with-secrets-injected)).
+Install the CLI, run `doppler login` (first time), then `doppler setup` in this directory (once per project). Both are interactive — run them in a regular terminal. See the [Doppler CLI docs](https://docs.doppler.com/docs/install-cli) for install instructions.
 
 #### Setting secrets
 
