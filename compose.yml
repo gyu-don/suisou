@@ -24,8 +24,6 @@ services:
       - ALL
     volumes:
       - mitmproxy-ca:/mitmproxy-ca:ro
-    ports:
-      - "18789:18789"
     depends_on:
       router:
         condition: service_healthy

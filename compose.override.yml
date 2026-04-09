@@ -1,0 +1,22 @@
+services:
+  openclaw:
+    environment:
+      - ANTHROPIC_API_KEY=SUISOU__ANTHROPIC_API_KEY
+      - CTF_HTTPBIN=SUISOU__CTF_HTTPBIN
+      - DISCORD_BOT_TOKEN=SUISOU__DISCORD_BOT_TOKEN
+      - GITHUB_TOKEN=SUISOU__GITHUB_TOKEN
+      - MOLTBOOK_API_KEY=SUISOU__MOLTBOOK_API_KEY
+      - OPENAI_API_KEY=SUISOU__OPENAI_API_KEY
+
+  router:
+    environment:
+      - ANTHROPIC_API_KEY
+      - CTF_HTTPBIN
+      - DISCORD_BOT_TOKEN
+      - GITHUB_TOKEN
+      - MOLTBOOK_API_KEY
+      - OPENAI_API_KEY
+
+  wg-client:
+    ports:
+      - "18790:18789"

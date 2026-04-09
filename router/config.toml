@@ -38,6 +38,15 @@ env    = "OPENAI_API_KEY"
 # Push uses POST /git-receive-pack.  The paths filter below restricts
 # POST to git-upload-pack only, so push is blocked.
 
+[services.github-api]
+endpoints = [
+  { domain = "api.github.com", methods = ["GET", "POST", "PUT", "PATCH", "DELETE"] },
+]
+
+[services.github-api.credentials]
+header = "authorization"
+env    = "GITHUB_TOKEN"
+
 [services.github-git]
 endpoints = [
   { domain = "github.com",             methods = ["GET"] },
@@ -46,57 +55,10 @@ endpoints = [
   { domain = "*.githubusercontent.com", methods = ["GET"] },
 ]
 
-# Uncomment to use the GitHub REST / GraphQL API (api.github.com).
-# [services.github-api]
-# endpoints = [
-#   { domain = "api.github.com", methods = ["GET", "POST", "PUT", "PATCH", "DELETE"] },
-# ]
-#
-# [services.github-api.credentials]
-# header = "authorization"
-# env    = "GITHUB_TOKEN"
-
-# --- Discord ---
-# [services.discord]
-# endpoints = [
-#   { domain = "discord.com", methods = ["GET", "POST", "PUT", "PATCH", "DELETE"] },
-#   { domain = "*.discord.gg" },
-#   { domain = "cdn.discordapp.com", methods = ["GET"] },
-#   { domain = "gateway.discord.gg" },
-# ]
-#
-# [services.discord.credentials]
-# header = "authorization"
-# env    = "DISCORD_BOT_TOKEN"
-
-# --- Tavily (web search API) ---
-# [services.tavily]
-# endpoints = [
-#   { domain = "api.tavily.com", methods = ["GET", "POST"] },
-# ]
-#
-# [services.tavily.credentials]
-# header = "authorization"
-# env = "TAVILY_API_KEY"
-
-# --- Local LLM ---
-# For a local LLM instance on the host (see compose.override.example.yml).
-# Uncomment the block matching your server and its default port.
-#
-# [services.ollama]
-# endpoints = [
-#   { domain = "host.docker.internal", allow_plain_http = true, ports = [11434] },
-# ]
-#
-# [services.llama-cpp]
-# endpoints = [
-#   { domain = "host.docker.internal", allow_plain_http = true, ports = [8080] },
-# ]
-#
-# [services.vllm]
-# endpoints = [
-#   { domain = "host.docker.internal", allow_plain_http = true, ports = [8000] },
-# ]
+[services.llama-cpp]
+endpoints = [
+  { domain = "host.docker.internal", allow_plain_http = true, ports = [8080] },
+]
 
 # --- Package registries ---
 [services.pkg]
@@ -109,6 +71,39 @@ endpoints = [
   { domain = "nuget.org",              methods = ["GET"] },
   { domain = "getcomposer.org",        methods = ["GET"] },
 ]
+
+# --- Development ---
+[services.httpbin]
+endpoints = [
+  { domain = "httpbin.org",             methods = ["GET"] },
+]
+
+[services.httpbin.credentials]
+header = "authorization"
+env    = "CTF_HTTPBIN"
+
+# --- Discord ---
+[services.discord]
+endpoints = [
+  { domain = "discord.com", methods = ["GET", "POST", "PUT", "PATCH", "DELETE"] },
+  { domain = "*.discord.gg" },
+  { domain = "cdn.discordapp.com", methods = ["GET"] },
+  { domain = "gateway.discord.gg" },
+]
+
+[services.discord.credentials]
+header = "authorization"
+env    = "DISCORD_BOT_TOKEN"
+
+# --- Moltbook (read-only) ---
+[services.moltbook]
+endpoints = [
+  { domain = "www.moltbook.com", methods = ["GET"] },
+]
+
+[services.moltbook.credentials]
+header = "authorization"
+env    = "MOLTBOOK_API_KEY"
 
 # --- CDN ---
 [services.cdn]
@@ -124,12 +119,6 @@ endpoints = [
   { domain = "*.gitlab.com",           methods = ["GET"] },
   { domain = "*.gitlab.io",            methods = ["GET"] },
   { domain = "bitbucket.org",          methods = ["GET"] },
-  { domain = "codeberg.org",           methods = ["GET"] },
-  { domain = "docker.com",             methods = ["GET"] },
-  { domain = "hub.docker.com",         methods = ["GET"] },
-  { domain = "registry-1.docker.io",   methods = ["GET"] },
-  { domain = "ghcr.io",                methods = ["GET"] },
-  { domain = "quay.io",                methods = ["GET"] },
 ]
 
 # --- Documentation ---
@@ -218,19 +207,6 @@ endpoints = [
   { domain = "timeout.com",       methods = ["GET"] },
   { domain = "metro.tokyo.lg.jp", methods = ["GET"] },
 ]
-
-# --- Moltbook (read-only) ---
-# AI agent social network. All endpoints require an API key.
-# Only GET is listed here to prevent the agent from posting, commenting, or voting.
-# Register the agent first (see AGENTS-user.md), then store the key in Doppler.
-# [services.moltbook]
-# endpoints = [
-#   { domain = "www.moltbook.com", methods = ["GET"] },
-# ]
-#
-# [services.moltbook.credentials]
-# header = "authorization"
-# env    = "MOLTBOOK_API_KEY"
 
 [services.academic]
 endpoints = [
