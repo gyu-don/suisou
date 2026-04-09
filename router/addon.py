@@ -6,7 +6,7 @@ import tomllib
 from fnmatch import fnmatch
 from pathlib import Path
 
-from mitmproxy import ctx, http
+from mitmproxy import ctx, http, tcp, udp
 
 CONFIG_PATH = Path("/etc/suisou/config.toml")
 DUMMY_PREFIX = "SUISOU__"
@@ -166,6 +166,27 @@ class SuisouAddon:
                 ctx.log.warn(
                     f"suisou: env var {rule['env']!r} not set for {host}"
                 )
+
+    def tcp_start(self, flow: tcp.TCPFlow) -> None:
+        """Block all non-HTTP TCP connections."""
+        dest = flow.server_conn.address
+        ctx.log.warn(
+            f"suisou: blocked non-HTTP TCP connection to {dest[0]}:{dest[1]}"
+        )
+        flow.kill()
+
+    def udp_start(self, flow: udp.UDPFlow) -> None:
+        """Block all non-DNS UDP connections.
+
+        DNS (port 53) is handled by mitmproxy's built-in resolver and does
+        not surface as a UDPFlow, so everything that reaches this hook is
+        non-DNS and should be blocked.
+        """
+        dest = flow.server_conn.address
+        ctx.log.warn(
+            f"suisou: blocked UDP connection to {dest[0]}:{dest[1]}"
+        )
+        flow.kill()
 
     def websocket_start(self, flow: http.HTTPFlow) -> None:
         flow.metadata["ws_client_messages"] = 0
