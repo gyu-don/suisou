@@ -36,9 +36,19 @@ rm "$KEY_FILE"
 
 ip link set wg0 up
 
-# Routing: keep WireGuard handshake via eth0, route everything else through tunnel
+# Routing: keep WireGuard handshake via eth0, route everything else through tunnel.
+# Reply-path carve-out: inbound connections that arrive on eth0 get a connmark,
+# and their reply packets are steered back through the original gateway via a
+# dedicated routing table. Without this, replies to published-port connections
+# (e.g. LAN access to the openclaw gateway on port 18789) would be routed
+# through wg0 and lost at the router, which has no route back to the LAN.
 ip route add "${ROUTER_IP}/32" via "$GATEWAY"
 ip route replace default dev wg0
+ip route add default via "$GATEWAY" table 100
+ip rule add fwmark 0x1 table 100
+
+iptables -t mangle -A PREROUTING -i eth0 -m conntrack --ctstate NEW -j CONNMARK --set-mark 0x1
+iptables -t mangle -A OUTPUT -j CONNMARK --restore-mark
 
 # Kill-switch: block all outbound traffic not going through the tunnel.
 # ESTABLISHED,RELATED on OUTPUT allows response packets for inbound connections
@@ -47,6 +57,7 @@ iptables -A OUTPUT -o lo -j ACCEPT
 iptables -A OUTPUT -o wg0 -j ACCEPT
 iptables -A OUTPUT -p udp -d "${ROUTER_IP}" --dport 51820 -j ACCEPT
 iptables -A OUTPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+iptables -A OUTPUT -o eth0 -m mark --mark 0x1 -j ACCEPT
 iptables -P OUTPUT DROP
 
 touch /tmp/wg-ready
