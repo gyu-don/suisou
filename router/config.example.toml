@@ -80,7 +80,7 @@ endpoints = [
 # env = "TAVILY_API_KEY"
 
 # --- Local LLM ---
-# For a local LLM instance on the host (see compose.override.example.yml).
+# For a local LLM instance on the host (see compose.override.example.yaml).
 # Uncomment the block matching your server and its default port.
 #
 # [services.ollama]

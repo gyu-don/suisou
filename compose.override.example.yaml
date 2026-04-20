@@ -1,5 +1,5 @@
-# compose.override.yml — personal overrides (auto-merged with compose.yml)
-# Copy this file to compose.override.yml and edit as needed.
+# compose.override.yaml — personal overrides (auto-merged with compose.yaml)
+# Copy this file to compose.override.yaml and edit as needed.
 
 services:
   openclaw:
