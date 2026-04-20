@@ -1,17 +1,20 @@
 # syntax=docker/dockerfile:1.7
 
-FROM mitmproxy/mitmproxy:latest
+FROM golang:1.25-bookworm AS build
 
-USER root
-RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/*
-USER mitmproxy
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN --mount=type=cache,target=/go/pkg/mod go mod download
+COPY *.go ./
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    CGO_ENABLED=0 go build -trimpath -o /suisou-router .
 
-COPY addon.py /opt/suisou/addon.py
+FROM gcr.io/distroless/static-debian12
+
+COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+COPY --from=build /suisou-router /suisou-router
 
 EXPOSE 51820/udp
 
-ENTRYPOINT ["mitmdump", "--set", "confdir=/home/mitmproxy/.mitmproxy", \
-            "--set", "ssl_verify_upstream_trusted_ca=/etc/ssl/certs/ca-certificates.crt", \
-            "--set", "flow_detail=0", \
-            "-s", "/opt/suisou/addon.py", \
-            "--mode", "wireguard"]
+ENTRYPOINT ["/suisou-router"]
