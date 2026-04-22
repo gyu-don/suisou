@@ -44,10 +44,10 @@ See `router/config.example.toml` for the full format.
 
 ### Credential injection
 
-The router uses a naming convention to replace dummy credentials with real ones. This requires settings in two places — `compose.override.yml` configures both together:
+The router uses a naming convention to replace dummy credentials with real ones. This requires settings in two places — `compose.override.yaml` configures both together:
 
 ```yaml
-# compose.override.yml
+# compose.override.yaml
 services:
   openclaw:
     environment:
@@ -61,12 +61,12 @@ services:
 
 When the router sees `SUISOU__ANTHROPIC_API_KEY` in an outbound HTTP header, it replaces it with the real `ANTHROPIC_API_KEY` from its own environment. The matching header is defined in `router/config.toml` under `[services.<name>.credentials]`.
 
-### `compose.override.yml`
+### `compose.override.yaml`
 
-Optional. Use this for per-user Docker Compose overrides (credentials, extra services, etc.). Docker Compose automatically merges this with `compose.yml`.
+Optional. Use this for per-user Docker Compose overrides (credentials, extra services, etc.). Docker Compose automatically merges this with `compose.yaml`.
 
 ```sh
-cp compose.override.example.yml compose.override.yml
+cp compose.override.example.yaml compose.override.yaml
 ```
 
 ### Secrets
@@ -191,7 +191,7 @@ Set `MOLTBOOK_API_KEY` to the value returned in step 1, using whichever method y
 
 **Step 4 — Configure credential injection**
 
-Add to `compose.override.yml`:
+Add to `compose.override.yaml`:
 
 ```yaml
 services:
@@ -230,7 +230,7 @@ Set `DISCORD_BOT_TOKEN` to the token from the Developer Portal, using whichever 
 
 **Step 3 — Configure credential injection**
 
-Add to `compose.override.yml`:
+Add to `compose.override.yaml`:
 
 ```yaml
 services:

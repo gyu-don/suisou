@@ -24,10 +24,10 @@ This project uses [jj](https://martinvonz.github.io/jj/) for version control.
 Always run at minimum:
 
 ```sh
-docker compose config -q   # validate compose.yml syntax
+docker compose config -q   # validate compose.yaml syntax
 ```
 
-When `compose.yml`, `Dockerfile`, or entrypoint scripts change, also:
+When `compose.yaml`, `Dockerfile`, or entrypoint scripts change, also:
 
 ```sh
 docker compose build && docker compose up -d
@@ -51,13 +51,13 @@ Required checks:
   unchanged.
 
 These checks are mandatory for changes to `router/addon.py`, `router/config.toml`,
-`compose.yml`, `wg-client/`, and sandbox entrypoint or networking logic. They are
+`compose.yaml`, `wg-client/`, and sandbox entrypoint or networking logic. They are
 part of the project's core security boundary, not optional smoke tests.
 
 ## Project Layout
 
 ```
-compose.yml          # Service definitions (openclaw, wg-client, router)
+compose.yaml          # Service definitions (openclaw, wg-client, router)
 wg-client/           # WireGuard client container (tunnel + kill-switch)
 references/          # Related projects (read-only context, not upstream)
   openclaw/          # OpenClaw source — primary reference for usage and integration

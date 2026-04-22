@@ -11,8 +11,8 @@ The router (mitmproxy) sits between the agent container and the internet, enforc
 cp router/config.example.toml router/config.toml
 # Edit router/config.toml to add your services
 
-# 2. Create compose.override.yml for credentials (see compose.override.example.yml)
-cp compose.override.example.yml compose.override.yml
+# 2. Create compose.override.yaml for credentials (see compose.override.example.yaml)
+cp compose.override.example.yaml compose.override.yaml
 
 # 3. Build and onboard
 docker compose build

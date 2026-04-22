@@ -1,6 +1,6 @@
 __pycache__/
 .env
-compose.override.yml
+compose.override.yaml
 router/config.toml
 .tmp/
 tmp/
