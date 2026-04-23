@@ -6,7 +6,7 @@ services:
     restart: unless-stopped
     network_mode: "service:wg-client"
     volumes:
-      - mitmproxy-ca:/mitmproxy-ca:ro
+      - router-public:/mitmproxy-ca:ro
       - openclaw-config:/home/node/.openclaw
     depends_on:
       wg-client:
@@ -23,7 +23,7 @@ services:
     cap_drop:
       - ALL
     volumes:
-      - mitmproxy-ca:/mitmproxy-ca:ro
+      - router-public:/mitmproxy-ca:ro
     ports:
       - "18789:18789"
     depends_on:
@@ -47,17 +47,19 @@ services:
       - tunnel
       - external
     volumes:
-      - mitmproxy-ca:/home/mitmproxy/.mitmproxy
+      - router-public:/data/public
+      - router-private:/data/private
       - ./router/config.toml:/etc/suisou/config.toml:ro
     healthcheck:
-      test: ["CMD", "test", "-f", "/home/mitmproxy/.mitmproxy/wireguard.conf"]
+      test: ["CMD", "/suisou-router", "--healthcheck"]
       interval: 2s
       timeout: 5s
       retries: 30
 
 volumes:
   openclaw-config:
-  mitmproxy-ca:
+  router-public:
+  router-private:
 
 networks:
   tunnel:

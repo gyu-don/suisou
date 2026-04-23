@@ -1,4 +1,4 @@
-package main
+package proxy
 
 import (
 	"bufio"
@@ -10,15 +10,17 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"suisou/router/internal/policy"
 )
 
 type Proxy struct {
-	policy    *Policy
+	policy    *policy.Policy
 	certStore *CertStore
 	transport *http.Transport
 }
 
-func NewProxy(policy *Policy, certStore *CertStore) *Proxy {
+func New(policy *policy.Policy, certStore *CertStore) *Proxy {
 	return &Proxy{
 		policy:    policy,
 		certStore: certStore,
@@ -39,11 +41,12 @@ func (p *Proxy) HandleTCP(clientConn net.Conn, dstAddr net.TCPAddr) {
 		return
 	}
 
+	buffered := newBufferedConn(clientConn, br)
 	if first[0] == 0x16 {
-		p.handleTLS(newBufferedConn(clientConn, br), dstAddr)
-	} else {
-		p.handlePlainHTTP(newBufferedConn(clientConn, br), dstAddr)
+		p.handleTLS(buffered, dstAddr)
+		return
 	}
+	p.handlePlainHTTP(buffered, dstAddr)
 }
 
 func (p *Proxy) handleTLS(clientConn net.Conn, dstAddr net.TCPAddr) {
@@ -73,75 +76,52 @@ func (p *Proxy) serveHTTP(clientConn net.Conn, dstAddr net.TCPAddr, isTLS bool, 
 			return
 		}
 
-		host := req.Host
-		if h, _, err := net.SplitHostPort(host); err == nil {
-			host = h
-		}
+		host := requestHost(req)
+		port := requestPort(dstAddr.Port, isTLS)
 
-		port := dstAddr.Port
-		if isTLS && port == 0 {
-			port = 443
-		} else if !isTLS && port == 0 {
-			port = 80
-		}
-
-		// Host/SNI validation for TLS
 		if isTLS && sni != "" && sni != host {
 			slog.Warn("Host/SNI mismatch", "host", host, "sni", sni)
-			writeHTTPError(clientConn, req, 403, "Blocked by suisou: untrusted Host header")
+			writeHTTPError(clientConn, req, http.StatusForbidden, "Blocked by suisou: untrusted Host header")
 			return
 		}
-
-		// Plain HTTP validation
 		if !isTLS && !p.policy.PlainHTTPAllowed(host) {
 			slog.Warn("plain HTTP not allowed", "host", host)
-			writeHTTPError(clientConn, req, 403, "Blocked by suisou: untrusted Host header")
+			writeHTTPError(clientConn, req, http.StatusForbidden, "Blocked by suisou: untrusted Host header")
 			return
 		}
 
 		method := strings.ToUpper(req.Method)
-		path := req.URL.Path
-		if path == "" {
-			path = "/"
-		}
-
+		path := requestPath(req)
 		target := fmt.Sprintf("%s:%d%s", host, port, path)
-
 		if !p.policy.EndpointAllowed(host, method, path, port) {
 			slog.Warn("blocked request", "method", method, "target", target)
-			writeHTTPError(clientConn, req, 403,
-				fmt.Sprintf("Blocked by suisou allowlist: %s %s:%d", method, host, port))
+			writeHTTPError(clientConn, req, http.StatusForbidden, fmt.Sprintf("Blocked by suisou allowlist: %s %s:%d", method, host, port))
 			return
 		}
 
 		slog.Info("allowed request", "method", method, "target", target)
-
 		p.policy.InjectCredentials(req, host)
 
-		// WebSocket upgrade
 		if isWebSocketUpgrade(req) {
 			p.handleWebSocketUpgrade(clientConn, req, host, port, isTLS)
 			return
 		}
 
-		scheme := "http"
+		req.URL.Scheme = "http"
 		if isTLS {
-			scheme = "https"
+			req.URL.Scheme = "https"
 		}
-		req.URL.Scheme = scheme
 		req.URL.Host = fmt.Sprintf("%s:%d", host, port)
 		req.RequestURI = ""
 
 		resp, err := p.transport.RoundTrip(req)
 		if err != nil {
 			slog.Error("upstream error", "err", err, "target", target)
-			writeHTTPError(clientConn, req, 502, "Bad Gateway")
+			writeHTTPError(clientConn, req, http.StatusBadGateway, "Bad Gateway")
 			return
 		}
 
-		keepAlive := resp.ProtoAtLeast(1, 1) && !resp.Close &&
-			!strings.EqualFold(resp.Header.Get("Connection"), "close")
-
+		keepAlive := resp.ProtoAtLeast(1, 1) && !resp.Close && !headerContainsToken(resp.Header, "Connection", "close")
 		if err := resp.Write(clientConn); err != nil {
 			resp.Body.Close()
 			return
@@ -155,18 +135,11 @@ func (p *Proxy) serveHTTP(clientConn net.Conn, dstAddr net.TCPAddr, isTLS bool, 
 }
 
 func (p *Proxy) handleWebSocketUpgrade(clientConn net.Conn, req *http.Request, host string, port int, isTLS bool) {
-	scheme := "ws"
-	dialScheme := "tcp"
-	if isTLS {
-		scheme = "wss"
-		_ = scheme
-	}
-
 	addr := fmt.Sprintf("%s:%d", host, port)
-	upstreamConn, err := net.DialTimeout(dialScheme, addr, 10*time.Second)
+	upstreamConn, err := net.DialTimeout("tcp", addr, 10*time.Second)
 	if err != nil {
 		slog.Error("websocket upstream dial failed", "err", err, "addr", addr)
-		writeHTTPError(clientConn, req, 502, "Bad Gateway")
+		writeHTTPError(clientConn, req, http.StatusBadGateway, "Bad Gateway")
 		return
 	}
 	defer upstreamConn.Close()
@@ -175,7 +148,7 @@ func (p *Proxy) handleWebSocketUpgrade(clientConn net.Conn, req *http.Request, h
 		tlsConn := tls.Client(upstreamConn, &tls.Config{ServerName: host})
 		if err := tlsConn.Handshake(); err != nil {
 			slog.Error("websocket upstream TLS failed", "err", err)
-			writeHTTPError(clientConn, req, 502, "Bad Gateway")
+			writeHTTPError(clientConn, req, http.StatusBadGateway, "Bad Gateway")
 			return
 		}
 		upstreamConn = tlsConn
@@ -183,6 +156,9 @@ func (p *Proxy) handleWebSocketUpgrade(clientConn net.Conn, req *http.Request, h
 
 	req.URL.Host = addr
 	req.URL.Scheme = "http"
+	if isTLS {
+		req.URL.Scheme = "https"
+	}
 	req.RequestURI = ""
 	if err := req.Write(upstreamConn); err != nil {
 		return
@@ -193,36 +169,71 @@ func (p *Proxy) handleWebSocketUpgrade(clientConn net.Conn, req *http.Request, h
 	if err != nil {
 		return
 	}
-
 	if err := resp.Write(clientConn); err != nil {
 		return
 	}
-
-	if resp.StatusCode != 101 {
+	if resp.StatusCode != http.StatusSwitchingProtocols {
 		return
 	}
 
 	slog.Info("websocket opened", "host", host)
-	relayWebSocket(clientConn, upstreamConn, host, p.policy)
+	relayWebSocket(newBufferedConn(upstreamConn, upBr), clientConn, host, p.policy)
 }
 
 func isWebSocketUpgrade(req *http.Request) bool {
-	return strings.EqualFold(req.Header.Get("Connection"), "upgrade") &&
-		strings.EqualFold(req.Header.Get("Upgrade"), "websocket")
+	return headerContainsToken(req.Header, "Connection", "upgrade") &&
+		headerContainsToken(req.Header, "Upgrade", "websocket")
+}
+
+func headerContainsToken(header http.Header, key, want string) bool {
+	for _, raw := range header.Values(key) {
+		for _, token := range strings.Split(raw, ",") {
+			if strings.EqualFold(strings.TrimSpace(token), want) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func requestHost(req *http.Request) string {
+	host := req.Host
+	if h, _, err := net.SplitHostPort(host); err == nil {
+		return h
+	}
+	return host
+}
+
+func requestPath(req *http.Request) string {
+	path := req.URL.RequestURI()
+	if path == "" {
+		return "/"
+	}
+	return path
+}
+
+func requestPort(port int, isTLS bool) int {
+	if port != 0 {
+		return port
+	}
+	if isTLS {
+		return 443
+	}
+	return 80
 }
 
 func writeHTTPError(w io.Writer, req *http.Request, status int, msg string) {
 	resp := &http.Response{
-		StatusCode: status,
-		Status:     fmt.Sprintf("%d %s", status, http.StatusText(status)),
-		Proto:      req.Proto,
-		ProtoMajor: req.ProtoMajor,
-		ProtoMinor: req.ProtoMinor,
-		Header:     http.Header{"Content-Type": {"text/plain"}, "Connection": {"close"}},
-		Body:       io.NopCloser(strings.NewReader(msg)),
+		StatusCode:    status,
+		Status:        fmt.Sprintf("%d %s", status, http.StatusText(status)),
+		Proto:         req.Proto,
+		ProtoMajor:    req.ProtoMajor,
+		ProtoMinor:    req.ProtoMinor,
+		ContentLength: int64(len(msg)),
+		Header:        http.Header{"Content-Type": {"text/plain"}, "Connection": {"close"}},
+		Body:          io.NopCloser(strings.NewReader(msg)),
 	}
-	resp.ContentLength = int64(len(msg))
-	resp.Write(w)
+	_ = resp.Write(w)
 }
 
 type bufferedConn struct {

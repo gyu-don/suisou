@@ -6,11 +6,9 @@ CONF="/mitmproxy-ca/wireguard.conf"
 echo "Waiting for WireGuard configuration..."
 while [ ! -f "$CONF" ]; do sleep 0.5; done
 
-# Parse mitmproxy's JSON config.
-# Both values are private keys — derive the server's public key with wg pubkey.
-SERVER_PRIVKEY=$(sed -n 's/.*"server_key"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$CONF")
-CLIENT_KEY=$(sed -n 's/.*"client_key"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$CONF")
-SERVER_PUBKEY=$(echo "$SERVER_PRIVKEY" | wg pubkey)
+# Parse router's JSON config.
+SERVER_PUBKEY=$(sed -n 's/.*"server_public_key"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$CONF")
+CLIENT_KEY=$(sed -n 's/.*"client_private_key"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$CONF")
 
 # mitmproxy WireGuard mode: client address is always 10.0.0.1/32
 ADDRESS="10.0.0.1/32"

@@ -1,4 +1,4 @@
-package main
+package wgstack
 
 import (
 	"context"
@@ -13,43 +13,35 @@ import (
 	"gvisor.dev/gvisor/pkg/tcpip/stack"
 )
 
-type channelTUN struct {
+type ChannelTUN struct {
 	ep     *channel.Endpoint
 	mtu    int
 	events chan tun.Event
-	closed chan struct{}
+	ctx    context.Context
+	cancel context.CancelFunc
 	once   sync.Once
 }
 
-func newChannelTUN(ep *channel.Endpoint, mtu int) *channelTUN {
-	t := &channelTUN{
+func NewChannelTUN(ep *channel.Endpoint, mtu int) *ChannelTUN {
+	ctx, cancel := context.WithCancel(context.Background())
+	t := &ChannelTUN{
 		ep:     ep,
 		mtu:    mtu,
 		events: make(chan tun.Event, 1),
-		closed: make(chan struct{}),
+		ctx:    ctx,
+		cancel: cancel,
 	}
 	t.events <- tun.EventUp
 	return t
 }
 
-func (t *channelTUN) File() *os.File { return nil }
+func (t *ChannelTUN) File() *os.File { return nil }
 
-func (t *channelTUN) Read(bufs [][]byte, sizes []int, offset int) (int, error) {
-	// Read packets from the gvisor stack (outgoing → wireguard)
-	ctx, cancel := context.WithCancel(context.Background())
-	go func() {
-		select {
-		case <-t.closed:
-			cancel()
-		case <-ctx.Done():
-		}
-	}()
-	defer cancel()
-
-	pkt := t.ep.ReadContext(ctx)
+func (t *ChannelTUN) Read(bufs [][]byte, sizes []int, offset int) (int, error) {
+	pkt := t.ep.ReadContext(t.ctx)
 	if pkt == nil {
 		select {
-		case <-t.closed:
+		case <-t.ctx.Done():
 			return 0, os.ErrClosed
 		default:
 			return 0, nil
@@ -64,9 +56,8 @@ func (t *channelTUN) Read(bufs [][]byte, sizes []int, offset int) (int, error) {
 	return 1, err
 }
 
-func (t *channelTUN) Write(bufs [][]byte, offset int) (int, error) {
-	// Write packets from wireguard into the gvisor stack
-	for i, buf := range bufs {
+func (t *ChannelTUN) Write(bufs [][]byte, offset int) (int, error) {
+	for _, buf := range bufs {
 		if offset >= len(buf) {
 			continue
 		}
@@ -75,10 +66,8 @@ func (t *channelTUN) Write(bufs [][]byte, offset int) (int, error) {
 			continue
 		}
 
-		// Determine network protocol from IP version
-		proto := tcpip.NetworkProtocolNumber(0)
-		version := data[0] >> 4
-		switch version {
+		var proto tcpip.NetworkProtocolNumber
+		switch data[0] >> 4 {
 		case 4:
 			proto = header.IPv4ProtocolNumber
 		case 6:
@@ -92,28 +81,27 @@ func (t *channelTUN) Write(bufs [][]byte, offset int) (int, error) {
 		})
 		t.ep.InjectInbound(proto, pkt)
 		pkt.DecRef()
-		_ = i
 	}
 	return len(bufs), nil
 }
 
-func (t *channelTUN) MTU() (int, error) {
+func (t *ChannelTUN) MTU() (int, error) {
 	return t.mtu, nil
 }
 
-func (t *channelTUN) Name() (string, error) {
+func (t *ChannelTUN) Name() (string, error) {
 	return "suisou0", nil
 }
 
-func (t *channelTUN) Events() <-chan tun.Event {
+func (t *ChannelTUN) Events() <-chan tun.Event {
 	return t.events
 }
 
-func (t *channelTUN) Close() error {
-	t.once.Do(func() { close(t.closed) })
+func (t *ChannelTUN) Close() error {
+	t.once.Do(t.cancel)
 	return nil
 }
 
-func (t *channelTUN) BatchSize() int {
+func (t *ChannelTUN) BatchSize() int {
 	return 1
 }
