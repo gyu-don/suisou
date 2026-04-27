@@ -41,6 +41,7 @@ services:
     build:
       context: router
     init: true
+    restart: unless-stopped
     extra_hosts:
       - "host.docker.internal:host-gateway"
     networks:
